@@ -4,217 +4,211 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Talking Cartoon Studio</title>
+<title>Talking Cartoon Video Maker</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif}
-header{background:#1d4ed8;text-align:center;padding:20px 12px}
-header h1{margin:0 0 8px;font-size:27px}
-main{max-width:650px;margin:auto;padding:15px}
-.panel{background:#1e293b;padding:15px;border-radius:14px;margin-bottom:15px}
-label{display:block;margin:12px 0 6px;font-weight:bold}
-textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid #64748b;background:#0f172a;color:white;font-size:16px}
-button{padding:12px;margin:5px 3px 0 0;border:0;border-radius:8px;background:#38bdf8;color:#082f49;font-weight:bold;font-size:15px}
-.secondary{background:#475569;color:white}
-canvas{width:100%;height:auto;border-radius:10px;display:block}
-#status{color:#7dd3fc;line-height:1.5}
-small{color:#cbd5e1;line-height:1.5}
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f0f5ff;
+  padding: 15px;
+}
+canvas {
+  width: 100%;
+  max-width: 500px;
+  background: #dff4ff;
+  border: 2px solid #333;
+  border-radius: 12px;
+}
+button, input {
+  margin: 10px auto;
+  padding: 12px;
+  max-width: 100%;
+}
+button {
+  background: #1769ff;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+#status { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
-<header>
-<h1>🎬 Talking Cartoon Studio</h1>
-<p>Create a cartoon story with voice</p>
-</header>
 
-<main>
-<section class="panel">
-<h2>📝 Your Story</h2>
-<label for="story">Write your story</label>
-<textarea id="story" rows="4">Hello friends! Welcome to my cartoon story. Today we will have a fun adventure!</textarea>
+<h2>🎬 Talking Cartoon Video Maker</h2>
 
-<label for="character">Choose a character</label>
-<select id="character">
-<option value="👦">Boy</option>
-<option value="👧">Girl</option>
-<option value="🐱">Cat</option>
-<option value="🐰">Rabbit</option>
-<option value="🐻">Bear</option>
-<option value="🤖">Robot</option>
-</select>
+<canvas id="screen" width="640" height="480"></canvas>
 
-<label for="lang">Voice language</label>
-<select id="lang">
-<option value="en-US">English</option>
-<option value="ur-PK">Urdu</option>
-<option value="hi-IN">Hindi</option>
-</select>
+<p>1. Apni cartoon ki voice MP3/WAV file select karein:</p>
+<input id="voiceFile" type="file" accept="audio/*">
 
-<button onclick="preview()">🎨 Update Cartoon</button>
-<button onclick="speak()">🗣️ Speak Story</button>
-<button class="secondary" onclick="stopVoice()">⏹ Stop Voice</button>
-<p id="status">Ready to make your cartoon!</p>
-</section>
-
-<section class="panel">
-<h2>🌈 Cartoon Preview</h2>
-<canvas id="canvas" width="600" height="400"></canvas>
 <br>
-<button onclick="startRecording()">🔴 Start Recording</button>
-<button class="secondary" onclick="stopRecording()">⬇ Stop & Download</button>
-<p><small>The recording includes cartoon animation and microphone audio. Speak into your phone while recording. Automatic speech playback is not included in the recorded audio.</small></p>
-</section>
-</main>
+<button id="preview">▶️ Voice Suno</button>
+<button id="record">🎥 Video Banao</button>
+
+<p id="status">Pehle voice file select karein.</p>
+<audio id="voice" controls></audio>
+<br>
+<a id="download" hidden>⬇️ Download Cartoon Video</a>
 
 <script>
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-let recorder=null;
-let chunks=[];
-let recording=false;
-let micStream=null;
-let videoStream=null;
-let frame=0;
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d");
+const voice = document.getElementById("voice");
+const fileInput = document.getElementById("voiceFile");
+const statusText = document.getElementById("status");
+const download = document.getElementById("download");
 
-function draw(){
-  const sky=ctx.createLinearGradient(0,0,0,400);
-  sky.addColorStop(0,"#7dd3fc");
-  sky.addColorStop(1,"#fef3c7");
-  ctx.fillStyle=sky;
-  ctx.fillRect(0,0,600,400);
+let audioURL = null;
+let animationId;
 
-  ctx.fillStyle="#4ade80";
-  ctx.fillRect(0,300,600,100);
+function drawCartoon(t = 0) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle="#ffffff";
+  ctx.fillStyle = "#dff4ff";
+  ctx.fillRect(0, 0, 640, 480);
+
+  // Sun
+  ctx.fillStyle = "#ffd43b";
   ctx.beginPath();
-  ctx.arc(105,90,35,0,Math.PI*2);
-  ctx.arc(145,80,45,0,Math.PI*2);
-  ctx.arc(185,95,30,0,Math.PI*2);
+  ctx.arc(550, 75, 38, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.font="105px sans-serif";
-  ctx.textAlign="center";
-  ctx.fillText(
-    document.getElementById("character").value,
-    300,245+Math.sin(frame/8)*8
-  );
+  // Cartoon body
+  ctx.fillStyle = "#2388e8";
+  ctx.beginPath();
+  ctx.ellipse(320, 365, 105, 90, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  ctx.fillStyle="rgba(255,255,255,0.95)";
-  ctx.fillRect(20,20,560,75);
-  ctx.fillStyle="#111827";
-  ctx.font="21px sans-serif";
+  // Face
+  ctx.fillStyle = "#ffcc99";
+  ctx.beginPath();
+  ctx.arc(320, 215, 105, 0, Math.PI * 2);
+  ctx.fill();
 
-  let story=document.getElementById("story").value;
-  if(story.length>58) story=story.slice(0,55)+"...";
-  ctx.fillText(story,300,64);
+  // Eyes
+  ctx.fillStyle = "#222";
+  ctx.beginPath();
+  ctx.arc(282, 190, 10, 0, Math.PI * 2);
+  ctx.arc(358, 190, 10, 0, Math.PI * 2);
+  ctx.fill();
 
-  frame++;
-  requestAnimationFrame(draw);
+  // Mouth moves while the video plays
+  ctx.fillStyle = "#8b1e1e";
+  ctx.beginPath();
+  if (voice.paused || voice.ended) {
+    ctx.ellipse(320, 258, 28, 7, 0, 0, Math.PI * 2);
+  } else {
+    const mouth = 8 + Math.abs(Math.sin(t / 90)) * 19;
+    ctx.ellipse(320, 258, 27, mouth, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
+
+  ctx.fillStyle = "#123";
+  ctx.font = "bold 25px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("Hello Friends!", 320, 445);
+
+  animationId = requestAnimationFrame(drawCartoon);
 }
-draw();
+drawCartoon();
 
-function preview(){
-  document.getElementById("status").textContent="Cartoon updated!";
-}
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
 
-function speak(){
-  const text=document.getElementById("story").value.trim();
-  if(!text)return alert("Please write a story first.");
-  if(!("speechSynthesis" in window)){
-    alert("Speech is not supported by this browser.");
+  if (audioURL) URL.revokeObjectURL(audioURL);
+  audioURL = URL.createObjectURL(file);
+  voice.src = audioURL;
+  download.hidden = true;
+  statusText.textContent = "Voice file ready. Ab Voice Suno ya Video Banao dabayein.";
+});
+
+document.getElementById("preview").addEventListener("click", async () => {
+  if (!voice.src) {
+    statusText.textContent = "Pehle voice ki MP3/WAV file select karein.";
     return;
   }
-  speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(text);
-  utterance.lang=document.getElementById("lang").value;
-  utterance.rate=0.9;
-  speechSynthesis.speak(utterance);
-  document.getElementById("status").textContent="Speaking story...";
-}
+  try {
+    voice.currentTime = 0;
+    await voice.play();
+  } catch (e) {
+    statusText.textContent = "Voice play nahi hui. Dobara try karein.";
+  }
+});
 
-function stopVoice(){
-  if("speechSynthesis" in window)speechSynthesis.cancel();
-  document.getElementById("status").textContent="Voice stopped.";
-}
-
-async function startRecording(){
-  if(recording)return;
-
-  if(!canvas.captureStream||!window.MediaRecorder){
-    document.getElementById("status").textContent=
-      "Recording is not supported. Try Chrome.";
+document.getElementById("record").addEventListener("click", async () => {
+  if (!voice.src) {
+    statusText.textContent = "Pehle voice ki MP3/WAV file select karein.";
     return;
   }
 
-  try{
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      throw new Error("Microphone is unavailable. Open the secure HTTPS website.");
-    }
+  if (!canvas.captureStream || !window.MediaRecorder) {
+    statusText.textContent = "Aapka browser video recording support nahi karta.";
+    return;
+  }
 
-    micStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    videoStream=canvas.captureStream(30);
+  try {
+    download.hidden = true;
+    statusText.textContent = "Video ban rahi hai. Is tab ko khula rakhein...";
 
-    const combined=new MediaStream([
+    const audioContext = new AudioContext();
+    await audioContext.resume();
+
+    const source = audioContext.createMediaElementSource(voice);
+    const destination = audioContext.createMediaStreamDestination();
+    source.connect(destination);
+    source.connect(audioContext.destination);
+
+    const videoStream = canvas.captureStream(25);
+    const combinedStream = new MediaStream([
       ...videoStream.getVideoTracks(),
-      ...micStream.getAudioTracks()
+      ...destination.stream.getAudioTracks()
     ]);
 
-    chunks=[];
-    let options={};
-    if(MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")){
-      options.mimeType="video/webm;codecs=vp8,opus";
-    }
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+      ? "video/webm;codecs=vp8,opus"
+      : "video/webm";
 
-    recorder=new MediaRecorder(combined,options);
+    const recorder = new MediaRecorder(combinedStream, { mimeType });
+    const chunks = [];
 
-    recorder.ondataavailable=function(e){
-      if(e.data&&e.data.size>0)chunks.push(e.data);
+    recorder.ondataavailable = e => {
+      if (e.data.size > 0) chunks.push(e.data);
     };
 
-    recorder.onstop=function(){
-      const blob=new Blob(chunks,{type:recorder.mimeType||"video/webm"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;
-      a.download="cartoon-with-voice.webm";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      document.getElementById("status").textContent=
-        "Your video is ready to download!";
-
-      if(micStream)micStream.getTracks().forEach(t=>t.stop());
-      if(videoStream)videoStream.getTracks().forEach(t=>t.stop());
-
-      setTimeout(()=>URL.revokeObjectURL(url),10000);
+    recorder.onerror = () => {
+      statusText.textContent = "Recording mein error aaya. Dobara try karein.";
     };
 
+    recorder.onstop = async () => {
+      const videoBlob = new Blob(chunks, { type: "video/webm" });
+      const videoURL = URL.createObjectURL(videoBlob);
+
+      download.href = videoURL;
+      download.download = "talking-cartoon.webm";
+      download.textContent = "⬇️ Download Cartoon Video";
+      download.hidden = false;
+
+      statusText.textContent = "Video tayyar hai! Download par tap karein.";
+
+      combinedStream.getTracks().forEach(track => track.stop());
+      await audioContext.close();
+    };
+
+    voice.onended = () => {
+      if (recorder.state !== "inactive") recorder.stop();
+    };
+
+    voice.currentTime = 0;
     recorder.start();
-    recording=true;
-    document.getElementById("status").textContent=
-      "Recording! Speak into your phone microphone now.";
+    await voice.play();
 
-  }catch(error){
-    if(micStream)micStream.getTracks().forEach(t=>t.stop());
-    if(videoStream)videoStream.getTracks().forEach(t=>t.stop());
-    document.getElementById("status").textContent=
-      "Could not start recording. Allow microphone permission and try again.";
+  } catch (error) {
+    statusText.textContent = "Recording shuru nahi hui. Page reload karke dobara try karein.";
   }
-}
-
-function stopRecording(){
-  if(recorder&&recording){
-    recording=false;
-    recorder.stop();
-    document.getElementById("status").textContent=
-      "Preparing your video...";
-  }else{
-    document.getElementById("status").textContent=
-      "Start recording first.";
-  }
-}
+});
 </script>
 </body>
 </html>
