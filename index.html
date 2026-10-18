@@ -1,214 +1,185 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Talking Cartoon Video Maker</title>
+<title>Urdu Talking Cartoon Maker</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f0f5ff;
-  padding: 15px;
-}
-canvas {
-  width: 100%;
-  max-width: 500px;
-  background: #dff4ff;
-  border: 2px solid #333;
-  border-radius: 12px;
-}
-button, input {
-  margin: 10px auto;
-  padding: 12px;
-  max-width: 100%;
-}
-button {
-  background: #1769ff;
-  color: white;
-  border: 0;
-  border-radius: 8px;
-  font-size: 16px;
-}
-#status { overflow-wrap: anywhere; }
+body{font-family:Arial,sans-serif;background:#eef3ff;margin:0;padding:16px;text-align:center}
+main{max-width:650px;margin:auto;background:white;padding:18px;border-radius:16px}
+h1{color:#234b91;font-size:25px}
+textarea{width:95%;height:120px;padding:10px;font-size:18px;border:1px solid #aaa;border-radius:10px}
+button{padding:12px;margin:7px;border:0;border-radius:9px;background:#2454a6;color:white;font-size:16px}
+canvas{width:100%;max-width:480px;background:#c9e9ff;border-radius:12px;margin-top:12px}
+input{margin:12px;max-width:95%}
+#status{color:#234b91}
 </style>
 </head>
 <body>
+<main>
+<h1>🎬 اردو ٹاکنگ کارٹون</h1>
+<p>اپنی کہانی لکھیں، آڈیو منتخب کریں اور کارٹون ویڈیو بنائیں۔</p>
 
-<h2>🎬 Talking Cartoon Video Maker</h2>
-
-<canvas id="screen" width="640" height="480"></canvas>
-
-<p>1. Apni cartoon ki voice MP3/WAV file select karein:</p>
-<input id="voiceFile" type="file" accept="audio/*">
+<textarea id="story">ایک دن ایک شرارتی خرگوش بازار گیا۔ وہاں اسے ایک گاجر ملی۔ خرگوش خوشی سے ناچنے لگا، لیکن گاجر اس کے ہاتھ سے گر گئی!</textarea>
 
 <br>
-<button id="preview">▶️ Voice Suno</button>
-<button id="record">🎥 Video Banao</button>
+<button onclick="speakStory()">🔊 کہانی سنیں</button>
 
-<p id="status">Pehle voice file select karein.</p>
-<audio id="voice" controls></audio>
+<p>اپنی کہانی کی آواز والی آڈیو فائل منتخب کریں:</p>
+<input id="audioFile" type="file" accept="audio/*">
+
 <br>
-<a id="download" hidden>⬇️ Download Cartoon Video</a>
+<canvas id="screen" width="640" height="360"></canvas>
+<br>
+<button onclick="startAnimation()">▶️ کارٹون چلائیں</button>
+<button onclick="makeVideo()">🎥 ویڈیو بنائیں</button>
+<p id="status">تیار ہے۔</p>
+<audio id="audio" controls style="width:100%"></audio>
+</main>
 
 <script>
-const canvas = document.getElementById("screen");
-const ctx = canvas.getContext("2d");
-const voice = document.getElementById("voice");
-const fileInput = document.getElementById("voiceFile");
-const statusText = document.getElementById("status");
-const download = document.getElementById("download");
+const canvas=document.getElementById("screen");
+const ctx=canvas.getContext("2d");
+const story=document.getElementById("story");
+const audio=document.getElementById("audio");
+const statusText=document.getElementById("status");
+let running=false;
+let frame=0;
+let recording=false;
 
-let audioURL = null;
-let animationId;
+document.getElementById("audioFile").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(file){
+  audio.src=URL.createObjectURL(file);
+  statusText.textContent="آڈیو منتخب ہوگئی۔";
+ }
+});
 
-function drawCartoon(t = 0) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#dff4ff";
-  ctx.fillRect(0, 0, 640, 480);
-
-  // Sun
-  ctx.fillStyle = "#ffd43b";
-  ctx.beginPath();
-  ctx.arc(550, 75, 38, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cartoon body
-  ctx.fillStyle = "#2388e8";
-  ctx.beginPath();
-  ctx.ellipse(320, 365, 105, 90, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Face
-  ctx.fillStyle = "#ffcc99";
-  ctx.beginPath();
-  ctx.arc(320, 215, 105, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Eyes
-  ctx.fillStyle = "#222";
-  ctx.beginPath();
-  ctx.arc(282, 190, 10, 0, Math.PI * 2);
-  ctx.arc(358, 190, 10, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mouth moves while the video plays
-  ctx.fillStyle = "#8b1e1e";
-  ctx.beginPath();
-  if (voice.paused || voice.ended) {
-    ctx.ellipse(320, 258, 28, 7, 0, 0, Math.PI * 2);
-  } else {
-    const mouth = 8 + Math.abs(Math.sin(t / 90)) * 19;
-    ctx.ellipse(320, 258, 27, mouth, 0, 0, Math.PI * 2);
-  }
-  ctx.fill();
-
-  ctx.fillStyle = "#123";
-  ctx.font = "bold 25px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("Hello Friends!", 320, 445);
-
-  animationId = requestAnimationFrame(drawCartoon);
+function speakStory(){
+ if(!("speechSynthesis" in window)){
+  alert("آپ کے براؤزر میں آواز کی سہولت دستیاب نہیں۔");
+  return;
+ }
+ speechSynthesis.cancel();
+ const utterance=new SpeechSynthesisUtterance(story.value);
+ utterance.lang="ur-PK";
+ utterance.rate=0.85;
+ speechSynthesis.speak(utterance);
 }
-drawCartoon();
 
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+function draw(){
+ frame++;
+ ctx.clearRect(0,0,640,360);
+ ctx.fillStyle="#bfe8ff";
+ ctx.fillRect(0,0,640,360);
+ ctx.fillStyle="#79c96b";
+ ctx.fillRect(0,285,640,75);
 
-  if (audioURL) URL.revokeObjectURL(audioURL);
-  audioURL = URL.createObjectURL(file);
-  voice.src = audioURL;
-  download.hidden = true;
-  statusText.textContent = "Voice file ready. Ab Voice Suno ya Video Banao dabayein.";
-});
+ctx.fillStyle="#ffdb9c";
+ctx.beginPath();
+ctx.arc(320,150+Math.sin(frame/8)*5,70,0,Math.PI*2);
+ctx.fill();
 
-document.getElementById("preview").addEventListener("click", async () => {
-  if (!voice.src) {
-    statusText.textContent = "Pehle voice ki MP3/WAV file select karein.";
-    return;
-  }
-  try {
-    voice.currentTime = 0;
-    await voice.play();
-  } catch (e) {
-    statusText.textContent = "Voice play nahi hui. Dobara try karein.";
-  }
-});
+ctx.fillStyle="#fff";
+ctx.beginPath();ctx.arc(295,135,17,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(345,135,17,0,Math.PI*2);ctx.fill();
 
-document.getElementById("record").addEventListener("click", async () => {
-  if (!voice.src) {
-    statusText.textContent = "Pehle voice ki MP3/WAV file select karein.";
-    return;
-  }
+ctx.fillStyle="#222";
+ctx.beginPath();ctx.arc(299,137,7,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(349,137,7,0,Math.PI*2);ctx.fill();
 
-  if (!canvas.captureStream || !window.MediaRecorder) {
-    statusText.textContent = "Aapka browser video recording support nahi karta.";
-    return;
-  }
+ctx.strokeStyle="#8c3c28";
+ctx.lineWidth=5;
+ctx.beginPath();
+ctx.arc(320,165,25,0.15,Math.PI-0.15);
+ctx.stroke();
 
-  try {
-    download.hidden = true;
-    statusText.textContent = "Video ban rahi hai. Is tab ko khula rakhein...";
+ctx.fillStyle="#234b91";
+ctx.font="bold 24px Arial";
+ctx.textAlign="center";
+ctx.fillText("میرا پیارا کارٹون",320,45);
 
-    const audioContext = new AudioContext();
-    await audioContext.resume();
+ctx.fillStyle="#fff";
+ctx.fillRect(25,300,590,48);
+ctx.fillStyle="#111";
+ctx.font="20px Arial";
+let words=story.value;
+if(words.length>55) words=words.slice(0,55)+"…";
+ctx.fillText(words,320,330);
 
-    const source = audioContext.createMediaElementSource(voice);
-    const destination = audioContext.createMediaStreamDestination();
-    source.connect(destination);
-    source.connect(audioContext.destination);
+if(running) requestAnimationFrame(draw);
+}
 
-    const videoStream = canvas.captureStream(25);
-    const combinedStream = new MediaStream([
-      ...videoStream.getVideoTracks(),
-      ...destination.stream.getAudioTracks()
-    ]);
+draw();
 
-    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-      ? "video/webm;codecs=vp8,opus"
-      : "video/webm";
+function startAnimation(){
+ running=true;
+ draw();
+ statusText.textContent="کارٹون چل رہا ہے۔";
+}
 
-    const recorder = new MediaRecorder(combinedStream, { mimeType });
-    const chunks = [];
+async function makeVideo(){
+ if(recording)return;
+ if(!window.MediaRecorder || !canvas.captureStream){
+  alert("ویڈیو ریکارڈنگ اس براؤزر میں دستیاب نہیں۔ Chrome میں کوشش کریں۔");
+  return;
+ }
+ if(!audio.src){
+  alert("پہلے کہانی کی آواز والی آڈیو فائل منتخب کریں۔");
+  return;
+ }
 
-    recorder.ondataavailable = e => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
+ try{
+  recording=true;
+  running=true;
+  draw();
 
-    recorder.onerror = () => {
-      statusText.textContent = "Recording mein error aaya. Dobara try karein.";
-    };
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  const audioContext=new AudioContextClass();
+  await audioContext.resume();
 
-    recorder.onstop = async () => {
-      const videoBlob = new Blob(chunks, { type: "video/webm" });
-      const videoURL = URL.createObjectURL(videoBlob);
+  const source=audioContext.createMediaElementSource(audio);
+  const destination=audioContext.createMediaStreamDestination();
+  source.connect(destination);
+  source.connect(audioContext.destination);
 
-      download.href = videoURL;
-      download.download = "talking-cartoon.webm";
-      download.textContent = "⬇️ Download Cartoon Video";
-      download.hidden = false;
+  const videoStream=canvas.captureStream(25);
+  destination.stream.getAudioTracks().forEach(track=>videoStream.addTrack(track));
 
-      statusText.textContent = "Video tayyar hai! Download par tap karein.";
+  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+   ?"video/webm;codecs=vp8,opus":"video/webm";
+  const recorder=new MediaRecorder(videoStream,{mimeType});
+  const chunks=[];
 
-      combinedStream.getTracks().forEach(track => track.stop());
-      await audioContext.close();
-    };
+  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  recorder.onstop=()=>{
+   const blob=new Blob(chunks,{type:"video/webm"});
+   const url=URL.createObjectURL(blob);
+   const link=document.createElement("a");
+   link.href=url;
+   link.download="urdu-cartoon.webm";
+   link.textContent="⬇️ ویڈیو ڈاؤن لوڈ کریں";
+   link.style.display="block";
+   link.style.margin="15px";
+   document.querySelector("main").appendChild(link);
+   statusText.textContent="ویڈیو تیار ہے!";
+   videoStream.getTracks().forEach(t=>t.stop());
+   audioContext.close();
+   recording=false;
+  };
 
-    voice.onended = () => {
-      if (recorder.state !== "inactive") recorder.stop();
-    };
-
-    voice.currentTime = 0;
-    recorder.start();
-    await voice.play();
-
-  } catch (error) {
-    statusText.textContent = "Recording shuru nahi hui. Page reload karke dobara try karein.";
-  }
-});
+  audio.currentTime=0;
+  recorder.start();
+  await audio.play();
+  audio.onended=()=>{if(recorder.state!=="inactive")recorder.stop()};
+  statusText.textContent="ویڈیو بن رہی ہے، آڈیو ختم ہونے تک انتظار کریں۔";
+ }catch(error){
+  recording=false;
+  statusText.textContent="مسئلہ آیا۔ آڈیو دوبارہ منتخب کرکے کوشش کریں۔";
+  alert("ویڈیو نہیں بن سکی۔ آڈیو فائل اور Chrome کی اجازتیں چیک کریں۔");
+ }
+}
 </script>
 </body>
 </html>
