@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talking Cartoon Video Maker</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#101827;color:white}
+header{text-align:center;padding:22px 12px;background:#172554}
+header h1{margin:0 0 8px;font-size:26px}
+header p{margin:0;color:#dbeafe}
+main{max-width:750px;margin:auto;padding:16px}
+.panel{background:#1e293b;padding:16px;border-radius:16px;margin-bottom:16px}
+label{display:block;margin:12px 0 7px;font-weight:bold}
+input,textarea,select{width:100%;padding:12px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:white;font-size:16px}
+textarea{min-height:110px;resize:vertical}
+button{border:0;border-radius:9px;padding:12px 14px;font-size:15px;font-weight:bold;cursor:pointer;margin:5px 3px 0 0}
+.primary{background:#38bdf8;color:#082f49}
+.secondary{background:#334155;color:white}
+#scene{min-height:240px;border-radius:14px;background:linear-gradient(#7dd3fc 0%,#bae6fd 65%,#4ade80 65%);display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;overflow:hidden;text-align:center;padding:18px}
+#characters{font-size:82px;letter-spacing:12px;animation:bounce 1.2s infinite alternate}
+#dialogue{background:#fff;color:#111827;padding:12px;border-radius:12px;max-width:95%;font-size:17px;margin-top:10px}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.small{font-size:13px;color:#cbd5e1;line-height:1.6}
+#status{color:#7dd3fc;margin-top:12px}
+footer{text-align:center;color:#94a3b8;padding:20px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>🎬 Talking Cartoon Studio</h1>
+<p>اپنی کہانی لکھیں اور کارٹون کی آواز سنیں!</p>
+</header>
+<main>
+<section class="panel">
+<h2>📝 اپنی کہانی بنائیں</h2>
+<label for="story">کہانی یا مکالمہ لکھیں</label>
+<textarea id="story" placeholder="مثال: علی نے کہا، السلام علیکم دوستو! آج ہم ایک دلچسپ کہانی سنائیں گے۔"></textarea>
+
+<label for="character">کارٹون کردار</label>
+<select id="character">
+<option value="👦">لڑکا</option>
+<option value="👧">لڑکی</option>
+<option value="🐱">بلی</option>
+<option value="🐰">خرگوش</option>
+<option value="🐻">ریچھ</option>
+<option value="🤖">روبوٹ</option>
+</select>
+
+<label for="language">آواز کی زبان</label>
+<select id="language">
+<option value="ur-PK">اردو</option>
+<option value="en-US">English</option>
+<option value="hi-IN">Hindi</option>
+</select>
+
+<button class="primary" onclick="makeScene()">🎨 کارٹون منظر بنائیں</button>
+<button class="secondary" onclick="speakStory()">🗣️ کہانی بلوائیں</button>
+<button class="secondary" onclick="stopStory()">⏹️ آواز بند کریں</button>
+<button class="secondary" onclick="downloadStory()">⬇️ کہانی TXT میں محفوظ کریں</button>
+<p id="status">اپنی کہانی لکھ کر شروع کریں۔</p>
+</section>
+
+<section class="panel">
+<h2>🌈 آپ کا کارٹون منظر</h2>
+<div id="scene">
+<div id="characters">👦</div>
+<div id="dialogue">آپ کی کہانی یہاں دکھائی جائے گی۔</div>
+</div>
+<p class="small">یہ ابتدائی ورژن متحرک ایموجی کارٹون اور آپ کے فون کی دستیاب آواز استعمال کرتا ہے۔ یہ ابھی مکمل AI اینیمیشن یا MP4 ویڈیو نہیں بناتا۔</p>
+</section>
+</main>
+<footer>Talking Cartoon Studio · Made for storytellers</footer>
+<script>
+function makeScene(){
+const story=document.getElementById('story').value.trim();
+const character=document.getElementById('character').value;
+if(!story){
+document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
+return;
+}
+document.getElementById('characters').textContent=character;
+document.getElementById('dialogue').textContent=story;
+document.getElementById('status').textContent='آپ کا کارٹون منظر تیار ہے!';
+}
+function speakStory(){
+const story=document.getElementById('story').value.trim();
+if(!story){
+document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
+return;
+}
+if(!('speechSynthesis' in window)){
+document.getElementById('status').textContent='آپ کا براؤزر آواز چلانے کی سہولت نہیں دیتا۔';
+return;
+}
+speechSynthesis.cancel();
+const utterance=new SpeechSynthesisUtterance(story);
+utterance.lang=document.getElementById('language').value;
+utterance.rate=0.9;
+utterance.onstart=()=>document.getElementById('status').textContent='کہانی سنائی جا رہی ہے...';
+utterance.onend=()=>document.getElementById('status').textContent='کہانی مکمل ہوگئی۔';
+utterance.onerror=()=>document.getElementById('status').textContent='آواز نہیں چل سکی۔ فون کی زبان اور آواز کی سیٹنگ چیک کریں۔';
+speechSynthesis.speak(utterance);
+}
+function stopStory(){
+if('speechSynthesis' in window)speechSynthesis.cancel();
+document.getElementById('status').textContent='آواز روک دی گئی۔';
+}
+function downloadStory(){
+const story=document.getElementById('story').value.trim();
+if(!story){
+document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
+return;
+}
+const blob=new Blob([story],{type:'text/plain;charset=utf-8'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;
+a.download='my-cartoon-story.txt';
+a.click();
+URL.revokeObjectURL(url);
+document.getElementById('status').textContent='کہانی محفوظ کرنے کی کوشش مکمل ہوئی۔';
+}
+</script>
+</body>
+</html>
