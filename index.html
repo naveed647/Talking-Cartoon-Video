@@ -1,127 +1,128 @@
 
 <!DOCTYPE html>
-<html lang="ur">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Talking Cartoon Video Maker</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#101827;color:white}
-header{text-align:center;padding:22px 12px;background:#172554}
-header h1{margin:0 0 8px;font-size:26px}
-header p{margin:0;color:#dbeafe}
-main{max-width:750px;margin:auto;padding:16px}
-.panel{background:#1e293b;padding:16px;border-radius:16px;margin-bottom:16px}
-label{display:block;margin:12px 0 7px;font-weight:bold}
-input,textarea,select{width:100%;padding:12px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:white;font-size:16px}
-textarea{min-height:110px;resize:vertical}
-button{border:0;border-radius:9px;padding:12px 14px;font-size:15px;font-weight:bold;cursor:pointer;margin:5px 3px 0 0}
-.primary{background:#38bdf8;color:#082f49}
-.secondary{background:#334155;color:white}
-#scene{min-height:240px;border-radius:14px;background:linear-gradient(#7dd3fc 0%,#bae6fd 65%,#4ade80 65%);display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;overflow:hidden;text-align:center;padding:18px}
-#characters{font-size:82px;letter-spacing:12px;animation:bounce 1.2s infinite alternate}
-#dialogue{background:#fff;color:#111827;padding:12px;border-radius:12px;max-width:95%;font-size:17px;margin-top:10px}
-@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
-.small{font-size:13px;color:#cbd5e1;line-height:1.6}
-#status{color:#7dd3fc;margin-top:12px}
-footer{text-align:center;color:#94a3b8;padding:20px;font-size:13px}
+body{margin:0;background:#101827;color:white;font-family:Arial;text-align:center}
+header{background:#1d4ed8;padding:20px}
+main{max-width:650px;margin:auto;padding:15px}
+textarea,select{width:100%;padding:12px;margin:8px 0;box-sizing:border-box;border-radius:8px;font-size:16px}
+button{padding:12px;margin:5px;border:0;border-radius:8px;background:#38bdf8;font-weight:bold}
+canvas{width:100%;max-width:600px;background:#bae6fd;border-radius:12px}
+#status{color:#7dd3fc}
 </style>
 </head>
 <body>
 <header>
-<h1>🎬 Talking Cartoon Studio</h1>
-<p>اپنی کہانی لکھیں اور کارٹون کی آواز سنیں!</p>
+<h1>🎬 Cartoon Video Maker</h1>
+<p>Create and record your cartoon story</p>
 </header>
 <main>
-<section class="panel">
-<h2>📝 اپنی کہانی بنائیں</h2>
-<label for="story">کہانی یا مکالمہ لکھیں</label>
-<textarea id="story" placeholder="مثال: علی نے کہا، السلام علیکم دوستو! آج ہم ایک دلچسپ کہانی سنائیں گے۔"></textarea>
-
-<label for="character">کارٹون کردار</label>
+<textarea id="story" rows="3">Hello friends! Welcome to my cartoon story.</textarea>
 <select id="character">
-<option value="👦">لڑکا</option>
-<option value="👧">لڑکی</option>
-<option value="🐱">بلی</option>
-<option value="🐰">خرگوش</option>
-<option value="🐻">ریچھ</option>
-<option value="🤖">روبوٹ</option>
+<option value="👦">Boy</option>
+<option value="👧">Girl</option>
+<option value="🐱">Cat</option>
+<option value="🐰">Rabbit</option>
+<option value="🤖">Robot</option>
 </select>
-
-<label for="language">آواز کی زبان</label>
-<select id="language">
-<option value="ur-PK">اردو</option>
-<option value="en-US">English</option>
-<option value="hi-IN">Hindi</option>
-</select>
-
-<button class="primary" onclick="makeScene()">🎨 کارٹون منظر بنائیں</button>
-<button class="secondary" onclick="speakStory()">🗣️ کہانی بلوائیں</button>
-<button class="secondary" onclick="stopStory()">⏹️ آواز بند کریں</button>
-<button class="secondary" onclick="downloadStory()">⬇️ کہانی TXT میں محفوظ کریں</button>
-<p id="status">اپنی کہانی لکھ کر شروع کریں۔</p>
-</section>
-
-<section class="panel">
-<h2>🌈 آپ کا کارٹون منظر</h2>
-<div id="scene">
-<div id="characters">👦</div>
-<div id="dialogue">آپ کی کہانی یہاں دکھائی جائے گی۔</div>
-</div>
-<p class="small">یہ ابتدائی ورژن متحرک ایموجی کارٹون اور آپ کے فون کی دستیاب آواز استعمال کرتا ہے۔ یہ ابھی مکمل AI اینیمیشن یا MP4 ویڈیو نہیں بناتا۔</p>
-</section>
+<br>
+<button onclick="preview()">Preview Cartoon</button>
+<button onclick="speak()">Speak Story</button>
+<br>
+<canvas id="video" width="600" height="400"></canvas>
+<br>
+<button onclick="startRecording()">🔴 Start Video</button>
+<button onclick="stopRecording()">⬇️ Stop & Download</button>
+<p id="status">Ready to create your cartoon!</p>
+<p>Video downloads as WebM. Speech audio is not included in the recording.</p>
 </main>
-<footer>Talking Cartoon Studio · Made for storytellers</footer>
 <script>
-function makeScene(){
-const story=document.getElementById('story').value.trim();
-const character=document.getElementById('character').value;
-if(!story){
-document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
-return;
+const c=document.getElementById("video");
+const ctx=c.getContext("2d");
+let recorder, chunks=[], recording=false, frame=0;
+
+function draw(){
+ctx.clearRect(0,0,600,400);
+let sky=ctx.createLinearGradient(0,0,0,400);
+sky.addColorStop(0,"#7dd3fc");
+sky.addColorStop(1,"#fef3c7");
+ctx.fillStyle=sky;
+ctx.fillRect(0,0,600,400);
+ctx.fillStyle="#4ade80";
+ctx.fillRect(0,300,600,100);
+ctx.font="100px sans-serif";
+ctx.textAlign="center";
+ctx.fillText(document.getElementById("character").value,
+300,245+Math.sin(frame/8)*10);
+ctx.fillStyle="white";
+ctx.fillRect(25,25,550,75);
+ctx.fillStyle="#111827";
+ctx.font="22px sans-serif";
+let words=document.getElementById("story").value;
+if(words.length>65) words=words.slice(0,62)+"...";
+ctx.fillText(words,300,68);
+frame++;
+requestAnimationFrame(draw);
 }
-document.getElementById('characters').textContent=character;
-document.getElementById('dialogue').textContent=story;
-document.getElementById('status').textContent='آپ کا کارٹون منظر تیار ہے!';
+draw();
+
+function preview(){
+document.getElementById("status").textContent="Cartoon preview is running!";
 }
-function speakStory(){
-const story=document.getElementById('story').value.trim();
-if(!story){
-document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
-return;
-}
-if(!('speechSynthesis' in window)){
-document.getElementById('status').textContent='آپ کا براؤزر آواز چلانے کی سہولت نہیں دیتا۔';
+function speak(){
+let t=document.getElementById("story").value;
+if(!t.trim()) return;
+if(!("speechSynthesis" in window)){
+document.getElementById("status").textContent="Speech is not supported in this browser.";
 return;
 }
 speechSynthesis.cancel();
-const utterance=new SpeechSynthesisUtterance(story);
-utterance.lang=document.getElementById('language').value;
-utterance.rate=0.9;
-utterance.onstart=()=>document.getElementById('status').textContent='کہانی سنائی جا رہی ہے...';
-utterance.onend=()=>document.getElementById('status').textContent='کہانی مکمل ہوگئی۔';
-utterance.onerror=()=>document.getElementById('status').textContent='آواز نہیں چل سکی۔ فون کی زبان اور آواز کی سیٹنگ چیک کریں۔';
-speechSynthesis.speak(utterance);
+let u=new SpeechSynthesisUtterance(t);
+u.lang="en-US";
+speechSynthesis.speak(u);
 }
-function stopStory(){
-if('speechSynthesis' in window)speechSynthesis.cancel();
-document.getElementById('status').textContent='آواز روک دی گئی۔';
-}
-function downloadStory(){
-const story=document.getElementById('story').value.trim();
-if(!story){
-document.getElementById('status').textContent='پہلے اپنی کہانی لکھیں۔';
+function startRecording(){
+if(!c.captureStream||!window.MediaRecorder){
+document.getElementById("status").textContent="Recording is not supported in this browser. Try Chrome.";
 return;
 }
-const blob=new Blob([story],{type:'text/plain;charset=utf-8'});
-const url=URL.createObjectURL(blob);
-const a=document.createElement('a');
+if(recording)return;
+chunks=[];
+try{
+let stream=c.captureStream(30);
+let type=MediaRecorder.isTypeSupported("video/webm;codecs=vp8")?
+"video/webm;codecs=vp8":"video/webm";
+recorder=new MediaRecorder(stream,{mimeType:type});
+recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+recorder.onstop=()=>{
+let blob=new Blob(chunks,{type:"video/webm"});
+let url=URL.createObjectURL(blob);
+let a=document.createElement("a");
 a.href=url;
-a.download='my-cartoon-story.txt';
+a.download="cartoon-story.webm";
 a.click();
-URL.revokeObjectURL(url);
-document.getElementById('status').textContent='کہانی محفوظ کرنے کی کوشش مکمل ہوئی۔';
+setTimeout(()=>URL.revokeObjectURL(url),2000);
+document.getElementById("status").textContent="Video downloaded!";
+};
+recorder.start();
+recording=true;
+document.getElementById("status").textContent="Recording... Tap Stop & Download when ready.";
+}catch(e){
+document.getElementById("status").textContent="Could not start recording. Try Chrome.";
+}
+}
+function stopRecording(){
+if(recorder&&recording){
+recording=false;
+recorder.stop();
+document.getElementById("status").textContent="Preparing your video...";
+}else{
+document.getElementById("status").textContent="Start recording first.";
+}
 }
 </script>
 </body>
